@@ -1,10 +1,14 @@
 # 缩放移动 html 元素
 
-## cssSelector
+` 此插件可以缩放移动 html 元素， js实现，理论上兼容所有js框架 `
+
+# 参数
+
+1. cssSelector
 
 css 合法选择器
 
-## options
+2. options
 
 ```javascript
     parentWidth = document.body.clientWidth, // 父元素宽度
