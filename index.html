@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>元素缩放示例</title>
+    <script src="./hammer.min.js"></script>
+    <script src="./scale-element.js"></script>
+    <style>
+      * {
+        padding: 0;
+        margin: 0;
+      }
+      .box {
+        width: 100%;
+        height: 100vh;
+      }
+      .scale {
+        width: 200px;
+        height: 200px;
+        background: #ad3b43;
+        position: absolute;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <div class="scale"></div>
+    </div>
+    <script>
+      var scale = new scaleElement(".scale", {
+        limit: true,
+        // relateX: 0,
+        // relateY: 0,
+      });
+      scale.init();
+    </script>
+  </body>
+</html>
