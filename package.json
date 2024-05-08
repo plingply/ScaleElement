@@ -2,7 +2,7 @@
   "name": "scale-element",
   "version": "1.0.0",
   "description": "scale and move HTML elements ",
-  "main": "./scale-element.min.js",
+  "main": "./src/main.js",
   "type": "module",
   "scripts": {
     "rollup": "rollup -c"

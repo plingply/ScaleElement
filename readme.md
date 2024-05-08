@@ -1,12 +1,13 @@
-# 缩放移动 html 元素
+### 介绍
 
-`此插件可以缩放移动 html 元素， js实现，理论上兼容所有js框架`
+此插件可以缩放移动 html 元素， js 实现，理论上兼容所有 js 框架
+预览地址: https://plingply.github.io/ScaleElement/
 
-# 参数
+### 参数
 
 1. cssSelector
 
-css 合法选择器
+   css 合法选择器
 
 2. options
 
@@ -19,4 +20,18 @@ css 合法选择器
     limit = true, // 是否限制移动超出父级容器
     relateX = 0, // 横向移动比例
     relateY = 0, // 纵向移动比例
+```
+
+### 使用方式
+
+此插件依赖 hammerjs，请先引入 hammerjs
+
+```javascript
+import scaleElement from "scale-element";
+var scale = new scaleElement(".scale", {
+  limit: true,
+  // relateX: 0,
+  // relateY: 0,
+});
+scale.init();
 ```
