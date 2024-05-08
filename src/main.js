@@ -1,17 +1,29 @@
 import Hammer from "hammerjs";
 
 export default class ScaleElement {
-  constructor(cssSelector, options) {
+  constructor(cssSelector, options = {}) {
     const {
-      parentWidth = document.body.clientWidth,
-      parentHeight = document.body.clientHeight,
-      defaultScale = 1,
-      minScale = 0,
-      maxScale = 0,
-      limit = true,
-      relateX = 0,
-      relateY = 0,
-    } = options;
+      parentWidth,
+      parentHeight,
+      defaultScale,
+      minScale,
+      maxScale,
+      limit,
+      relateX,
+      relateY,
+    } = Object.assign(
+      {
+        parentWidth: document.body.clientWidth,
+        parentHeight: document.body.clientHeight,
+        defaultScale: 1,
+        minScale: 0,
+        maxScale: 0,
+        limit: true,
+        relateX: 0,
+        relateY: 0,
+      },
+      options
+    );
 
     if (!cssSelector) {
       throw new Error("cssSelector is required");
@@ -44,7 +56,7 @@ export default class ScaleElement {
     if (!this._element) {
       throw new Error("Element not found");
     }
-
+    console.log("init success !");
     this.mc = new Hammer.Manager(this._element);
     this.timer = false;
     this.translateX = 0;

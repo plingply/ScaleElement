@@ -1,6 +1,6 @@
 {
   "name": "scale-element",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "scale and move HTML elements ",
   "main": "./src/main.js",
   "type": "module",
