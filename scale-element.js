@@ -78,25 +78,6 @@
     _animate(fn) {
       return this.animate()(fn);
     }
-    onPan(ev) {
-      var that = this;
-      that.translateX = ev.deltaX;
-      that.translateY = ev.deltaY;
-      that._position = {
-        translateX: ev.deltaX,
-        translateY: ev.deltaY,
-        scale: that.scale
-      };
-    }
-    onPinch(ev) {
-      var that = this;
-      that.scale *= ev.scale;
-      that._selfPosition({
-        translateX: that.translateX,
-        translateY: that.translateY,
-        scale: that.scale
-      });
-    }
     init() {
       var that = this;
       if (!that.mc) return;
