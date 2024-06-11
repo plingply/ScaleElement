@@ -18,7 +18,7 @@
   "dependencies": {
     "@babel/core": "^7.24.5",
     "hammerjs": "^2.0.8",
-    "rollup": "^4.17.2",
+    "rollup": "^3.29.4",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-terser": "^7.0.2"
   }
