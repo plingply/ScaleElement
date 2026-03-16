@@ -1,39 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>元素缩放示例</title>
-    <script src="./hammer.min.js"></script>
-    <script src="./scale-element.js"></script>
     <style>
-      * {
-        padding: 0;
-        margin: 0;
-      }
-      .box {
-        width: 100%;
-        height: 100vh;
-      }
-      .scale {
-        width: 200px;
-        height: 200px;
-        background: #ad3b43;
+      .container {
+        width: 500px;
+        height: 500px;
+        overflow: hidden;
+        border: 1px solid #ddd;
+        box-sizing: border-box;
         position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        margin: auto; 
       }
+      
     </style>
   </head>
   <body>
-    <div class="box">
-      <div class="scale"></div>
+    <div class="container">
+      <div id="zoomImage">
+        <img src="img.png" alt="zoomable image" />
+      </div>
     </div>
-    <script>
-      var scale = new scaleElement(".scale", {
-        limit: true,
-        // relateX: 0,
-        // relateY: 0,
+
+    <script type="module">
+      import ImageZoom from "./src/main.js";
+
+      // 基础使用
+      const zoom = new ImageZoom("#zoomImage", {
+        minZoom: 1,
+        maxZoom: 4,
+        doubleClickZoom: true,
       });
-      scale.init();
+
+      // 方法调用
+      zoom.reset(); // 重置缩放
+      zoom.destroy(); // 销毁实例
     </script>
   </body>
 </html>
