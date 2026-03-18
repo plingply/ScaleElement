@@ -1,7 +1,7 @@
 /**
- * ImageZoom - 图片放大缩小库（修复版）
+ * ElementZoom - 元素放大缩小库（修复版） 
  */
-class ImageZoom {
+class ElementZoom {
   constructor(target, options = {}) {
     this.target =
       typeof target === "string" ? document.querySelector(target) : target;
@@ -744,4 +744,4 @@ class ImageZoom {
   }
 }
 
-export default ImageZoom;
+export default ElementZoom;

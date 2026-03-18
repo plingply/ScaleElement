@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta name="viewport" content="width=device-width, user-scalable=no">
+    <title>缩放示例</title>
+    <script src="./elementZoom.min.js"></script>
     <style>
       .container {
         width: 100%;
@@ -19,19 +22,17 @@
       </div>
     </div>
 
-    <script type="module">
-      import ImageZoom from "./src/main.js";
-
+    <script>
       // 基础使用
-      const zoom = new ImageZoom("#zoomImage", {
+      const zoom = new elementZoom("#zoomImage", {
         minZoom: 1,
         maxZoom: 4,
         doubleClickZoom: true,
       });
 
       // 方法调用
-      // zoom.reset(); // 重置缩放
-      // zoom.destroy(); // 销毁实例
+      zoom.reset(); // 重置缩放
+      zoom.destroy(); // 销毁实例
     </script>
   </body>
 </html>
