@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no">
     <title>缩放示例</title>
-    <script src="./elementZoom.min.js"></script>
     <style>
       .container {
         width: 100%;
@@ -22,9 +22,10 @@
       </div>
     </div>
 
-    <script>
+    <script type="module">
+      import ElementZoom from "./src/main.js";
       // 基础使用
-      const zoom = new elementZoom("#zoomImage", {
+      const zoom = new ElementZoom("#zoomImage", {
         minZoom: 1,
         maxZoom: 4,
         doubleClickZoom: true,
