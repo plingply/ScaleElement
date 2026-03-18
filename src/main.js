@@ -159,6 +159,14 @@ class ImageZoom {
     this.target.addEventListener("touchend", this.onTouchEnd.bind(this));
     this.target.addEventListener("touchcancel", this.onTouchEnd.bind(this));
 
+    // 鼠标事件
+    this.target.addEventListener("mousedown", this.onMouseDown.bind(this));
+    this.target.addEventListener("mousemove", this.onMouseMove.bind(this));
+    this.target.addEventListener("mouseup", this.onMouseUp.bind(this));
+    this.target.addEventListener("mouseleave", this.onMouseUp.bind(this));
+    this.target.addEventListener("wheel", this.onWheel.bind(this), { passive: false });
+    this.target.addEventListener("dblclick", this.onDoubleClick.bind(this));
+
     // 窗口大小改变时重新计算并居中
     window.addEventListener("resize", () => {
       this.updateImageSize();
@@ -586,6 +594,137 @@ class ImageZoom {
     }
   }
 
+  /**
+   * 鼠标按下
+   */
+  onMouseDown(e) {
+    e.preventDefault();
+
+    this.touch.fingerNum = 1;
+    this.touch.startTime = Date.now();
+    this.touch.moved = false;
+
+    this.touch.startX = e.clientX;
+    this.touch.startY = e.clientY;
+    this.touch.lastX = e.clientX;
+    this.touch.lastY = e.clientY;
+
+    this.touch.startTranslateX = this.state.translateX;
+    this.touch.startTranslateY = this.state.translateY;
+    this.touch.startScale = this.state.scale;
+
+    this.touch.velocityX = 0;
+    this.touch.velocityY = 0;
+    this.touch.lastMoveTime = Date.now();
+    this.touch.lastMoveX = e.clientX;
+    this.touch.lastMoveY = e.clientY;
+
+    this.state.isMoving = true;
+    this.touch.lastCenter = {
+      x: e.clientX,
+      y: e.clientY,
+    };
+  }
+
+  /**
+   * 鼠标移动
+   */
+  onMouseMove(e) {
+    e.preventDefault();
+
+    if (this.state.isMoving) {
+      this.touch.moved = true;
+
+      const deltaX = e.clientX - this.touch.startX;
+      const deltaY = e.clientY - this.touch.startY;
+
+      this.state.translateX = this.touch.startTranslateX + deltaX;
+      this.state.translateY = this.touch.startTranslateY + deltaY;
+
+      this.touch.lastCenter = {
+        x: e.clientX,
+        y: e.clientY,
+      };
+
+      const currentTime = Date.now();
+      const timeDiff = currentTime - this.touch.lastMoveTime;
+      
+      if (timeDiff > 0) {
+        this.touch.velocityX = (e.clientX - this.touch.lastMoveX) / timeDiff;
+        this.touch.velocityY = (e.clientY - this.touch.lastMoveY) / timeDiff;
+      }
+      
+      this.touch.lastMoveTime = currentTime;
+      this.touch.lastMoveX = e.clientX;
+      this.touch.lastMoveY = e.clientY;
+
+      this.updateTransform();
+    }
+  }
+
+  /**
+   * 鼠标松开
+   */
+  onMouseUp(e) {
+    this.state.isMoving = false;
+
+    if (this.inertiaAnimationId) {
+      cancelAnimationFrame(this.inertiaAnimationId);
+      this.inertiaAnimationId = null;
+    }
+
+    if (this.touch.moved) {
+      this.startInertia();
+    } else {
+      this.snapToBounds();
+    }
+  }
+
+  /**
+   * 鼠标滚轮缩放
+   */
+  onWheel(e) {
+    e.preventDefault();
+
+    const { maxZoom } = this.options;
+    const min = this.state.initialScale;
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    let newScale = this.state.scale * (1 + delta);
+
+    newScale = this.clamp(newScale, min, maxZoom);
+
+    const center = {
+      x: e.clientX,
+      y: e.clientY,
+    };
+
+    this.touch.lastCenter = {
+      x: e.clientX,
+      y: e.clientY,
+    };
+
+    this.setScale(newScale, center, true);
+  }
+
+  /**
+   * 鼠标双击
+   */
+  onDoubleClick(e) {
+    if (this.options.doubleClickZoom) {
+      const newScale = this.state.scale > this.state.initialScale ? 
+        this.state.initialScale : 
+        this.state.initialScale * 2;
+      this.setScale(
+        newScale,
+        {
+          x: e.clientX,
+          y: e.clientY,
+        },
+        true
+      );
+    }
+  }
+
   destroy() {
     if (this.inertiaAnimationId) {
       cancelAnimationFrame(this.inertiaAnimationId);
@@ -595,6 +734,12 @@ class ImageZoom {
     this.target.removeEventListener("touchmove", this.onTouchMove);
     this.target.removeEventListener("touchend", this.onTouchEnd);
     this.target.removeEventListener("touchcancel", this.onTouchEnd);
+    this.target.removeEventListener("mousedown", this.onMouseDown);
+    this.target.removeEventListener("mousemove", this.onMouseMove);
+    this.target.removeEventListener("mouseup", this.onMouseUp);
+    this.target.removeEventListener("mouseleave", this.onMouseUp);
+    this.target.removeEventListener("wheel", this.onWheel);
+    this.target.removeEventListener("dblclick", this.onDoubleClick);
     window.removeEventListener("resize", this.updateImageSize);
   }
 }
