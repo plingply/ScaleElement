@@ -242,12 +242,18 @@ class ImageZoom {
 
   /**
    * 设置缩放
+   * @param {number} newScale - 新的缩放比例
+   * @param {object} center - 缩放中心点
+   * @param {boolean} animate - 是否动画过渡
+   * @param {boolean} allowExceed - 是否允许超出边界，默认false
    */
-  setScale(newScale, center = null, animate = false) {
+  setScale(newScale, center = null, animate = false, allowExceed = false) {
     const { minZoom, maxZoom } = this.options;
-    // 修改minZoom为initialScale，确保不能缩放到比初始状态小
     const min = this.state.initialScale;
-    newScale = this.clamp(newScale, min, maxZoom);
+
+    if (!allowExceed) {
+      newScale = this.clamp(newScale, min, maxZoom);
+    }
 
     if (newScale === this.state.scale) return;
 
@@ -348,12 +354,12 @@ class ImageZoom {
       const currentDistance = this.getDistance(touches);
       const currentCenter = this.getCenter(touches);
 
-      // 计算新的缩放比例
+      // 计算新的缩放比例，允许超出边界
       const newScale =
         (this.touch.startScale * currentDistance) / this.touch.startDistance;
 
-      // 使用当前中心点进行缩放
-      this.setScale(newScale, currentCenter);
+      // 使用当前中心点进行缩放，允许超出边界
+      this.setScale(newScale, currentCenter, false, true);
 
       this.touch.lastCenter = currentCenter;
     }
@@ -395,9 +401,18 @@ class ImageZoom {
       this.state.isMoving = false;
       this.state.isZooming = false;
 
-      // 边界修正
-      this.clampPosition();
-      this.updateTransform(true);
+      // 缩放回弹：如果超出边界，回弹到边界值
+      const { maxZoom } = this.options;
+      const min = this.state.initialScale;
+      const currentScale = this.state.scale;
+      
+      if (currentScale < min || currentScale > maxZoom) {
+        const targetScale = this.clamp(currentScale, min, maxZoom);
+        this.setScale(targetScale, this.touch.lastCenter, true);
+      } else {
+        this.clampPosition();
+        this.updateTransform(true);
+      }
     }
   }
 
