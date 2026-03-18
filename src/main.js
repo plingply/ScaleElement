@@ -315,9 +315,9 @@ class ImageZoom {
     this.touch.startTranslateY = this.state.translateY;
     this.touch.startScale = this.state.scale;
 
-    // 单指：可能移动
+    // 单指：允许移动
     if (this.touch.fingerNum === 1) {
-      this.state.isMoving = this.state.scale > this.state.initialScale;
+      this.state.isMoving = true;
     }
 
     // 双指：缩放
@@ -343,7 +343,6 @@ class ImageZoom {
       this.state.translateX = this.touch.startTranslateX + deltaX;
       this.state.translateY = this.touch.startTranslateY + deltaY;
 
-      this.clampPosition();
       this.updateTransform();
     }
 
@@ -409,10 +408,10 @@ class ImageZoom {
       if (currentScale < min || currentScale > maxZoom) {
         const targetScale = this.clamp(currentScale, min, maxZoom);
         this.setScale(targetScale, this.touch.lastCenter, true);
-      } else {
-        this.clampPosition();
-        this.updateTransform(true);
       }
+      
+      this.clampPosition();
+      this.updateTransform(true);
     }
   }
 
