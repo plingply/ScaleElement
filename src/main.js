@@ -161,9 +161,6 @@ class ElementZoom {
 
     // 鼠标事件
     this.target.addEventListener("mousedown", this.onMouseDown.bind(this));
-    this.target.addEventListener("mousemove", this.onMouseMove.bind(this));
-    this.target.addEventListener("mouseup", this.onMouseUp.bind(this));
-    this.target.addEventListener("mouseleave", this.onMouseUp.bind(this));
     this.target.addEventListener("wheel", this.onWheel.bind(this), { passive: false });
     this.target.addEventListener("dblclick", this.onDoubleClick.bind(this));
 
@@ -624,6 +621,12 @@ class ElementZoom {
       x: e.clientX,
       y: e.clientY,
     };
+
+    // 添加全局鼠标移动和松开事件
+    this.boundOnMouseMove = this.onMouseMove.bind(this);
+    this.boundOnMouseUp = this.onMouseUp.bind(this);
+    document.addEventListener("mousemove", this.boundOnMouseMove);
+    document.addEventListener("mouseup", this.boundOnMouseUp);
   }
 
   /**
@@ -667,6 +670,16 @@ class ElementZoom {
    */
   onMouseUp(e) {
     this.state.isMoving = false;
+
+    // 移除全局鼠标事件
+    if (this.boundOnMouseMove) {
+      document.removeEventListener("mousemove", this.boundOnMouseMove);
+      this.boundOnMouseMove = null;
+    }
+    if (this.boundOnMouseUp) {
+      document.removeEventListener("mouseup", this.boundOnMouseUp);
+      this.boundOnMouseUp = null;
+    }
 
     if (this.inertiaAnimationId) {
       cancelAnimationFrame(this.inertiaAnimationId);
@@ -730,14 +743,22 @@ class ElementZoom {
       cancelAnimationFrame(this.inertiaAnimationId);
       this.inertiaAnimationId = null;
     }
+    
+    // 移除全局鼠标事件
+    if (this.boundOnMouseMove) {
+      document.removeEventListener("mousemove", this.boundOnMouseMove);
+      this.boundOnMouseMove = null;
+    }
+    if (this.boundOnMouseUp) {
+      document.removeEventListener("mouseup", this.boundOnMouseUp);
+      this.boundOnMouseUp = null;
+    }
+    
     this.target.removeEventListener("touchstart", this.onTouchStart);
     this.target.removeEventListener("touchmove", this.onTouchMove);
     this.target.removeEventListener("touchend", this.onTouchEnd);
     this.target.removeEventListener("touchcancel", this.onTouchEnd);
     this.target.removeEventListener("mousedown", this.onMouseDown);
-    this.target.removeEventListener("mousemove", this.onMouseMove);
-    this.target.removeEventListener("mouseup", this.onMouseUp);
-    this.target.removeEventListener("mouseleave", this.onMouseUp);
     this.target.removeEventListener("wheel", this.onWheel);
     this.target.removeEventListener("dblclick", this.onDoubleClick);
     window.removeEventListener("resize", this.updateImageSize);
