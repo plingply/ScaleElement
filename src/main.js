@@ -43,6 +43,7 @@ class ImageZoom {
       startTime: 0,
       fingerNum: 0,
       moved: false,
+      wasZooming: false, // 记录是否曾经进入过缩放模式
     };
 
     this.doubleTapTimer = null;
@@ -261,34 +262,41 @@ class ImageZoom {
     const scaleRatio = newScale / oldScale;
 
     if (center) {
-      // 获取当前图片的实际位置
-      const rect = this.target.getBoundingClientRect();
+      const { imageWidth, imageHeight, translateX, translateY } = this.state;
+      const containerRect = this.container.getBoundingClientRect();
+      
+      // 计算当前缩放后的实际尺寸
+      const currentWidth = imageWidth * oldScale;
+      const currentHeight = imageHeight * oldScale;
+
+      // 计算触摸点相对于容器左上角的坐标
+      const relativeCenterX = center.x - containerRect.left;
+      const relativeCenterY = center.y - containerRect.top;
 
       // 计算触摸点相对于图片左上角的偏移
-      const offsetX = center.x - rect.left;
-      const offsetY = center.y - rect.top;
+      const offsetX = relativeCenterX - translateX;
+      const offsetY = relativeCenterY - translateY;
 
       // 计算触摸点在图片上的相对位置（0-1之间）
-      const relativeX = offsetX / rect.width;
-      const relativeY = offsetY / rect.height;
+      const relativeX = offsetX / currentWidth;
+      const relativeY = offsetY / currentHeight;
 
       // 根据缩放比例调整位移，保持触摸点位置不变
-      // 新的位移 = 旧位移 - (新尺寸增量 * 相对位置)
-      const newTranslateX =
-        this.state.translateX - rect.width * (scaleRatio - 1) * relativeX;
-      const newTranslateY =
-        this.state.translateY - rect.height * (scaleRatio - 1) * relativeY;
+      // 新的位移 = 旧位移 - (旧尺寸 * 缩放增量 * 相对位置)
+      const newTranslateX = translateX - currentWidth * (scaleRatio - 1) * relativeX;
+      const newTranslateY = translateY - currentHeight * (scaleRatio - 1) * relativeY;
 
       this.state.scale = newScale;
       this.state.translateX = newTranslateX;
       this.state.translateY = newTranslateY;
     } else {
-      // 没有中心点，以图片左上角为中心缩放
       this.state.scale = newScale;
     }
 
-    // 限制边界
-    this.clampPosition();
+    // 如果不是动画模式，限制边界
+    if (!animate) {
+      this.clampPosition();
+    }
     this.updateTransform(animate);
   }
 
@@ -318,6 +326,10 @@ class ImageZoom {
     // 单指：允许移动
     if (this.touch.fingerNum === 1) {
       this.state.isMoving = true;
+      this.touch.lastCenter = {
+        x: touches[0].clientX,
+        y: touches[0].clientY,
+      };
     }
 
     // 双指：缩放
@@ -343,6 +355,11 @@ class ImageZoom {
       this.state.translateX = this.touch.startTranslateX + deltaX;
       this.state.translateY = this.touch.startTranslateY + deltaY;
 
+      this.touch.lastCenter = {
+        x: touches[0].clientX,
+        y: touches[0].clientY,
+      };
+
       this.updateTransform();
     }
 
@@ -353,9 +370,28 @@ class ImageZoom {
       const currentDistance = this.getDistance(touches);
       const currentCenter = this.getCenter(touches);
 
-      // 计算新的缩放比例，允许超出边界
-      const newScale =
+      // 计算理论上的缩放比例
+      const rawScale =
         (this.touch.startScale * currentDistance) / this.touch.startDistance;
+
+      // 应用阻尼效果
+      const { maxZoom } = this.options;
+      const min = this.state.initialScale;
+      let newScale = rawScale;
+
+      // 超出最大值时的阻尼
+      if (rawScale > maxZoom) {
+        const exceed = rawScale - maxZoom;
+        const damping = 0.2;
+        newScale = maxZoom + exceed * damping;
+      }
+
+      // 超出最小值时的阻尼
+      if (rawScale < min) {
+        const exceed = min - rawScale;
+        const damping = 0.2;
+        newScale = min - exceed * damping;
+      }
 
       // 使用当前中心点进行缩放，允许超出边界
       this.setScale(newScale, currentCenter, false, true);
