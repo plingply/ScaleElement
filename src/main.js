@@ -299,6 +299,10 @@ class ImageZoom {
       this.state.scale = newScale;
     }
 
+    // 如果是动画模式，限制位置边界
+    if (animate) {
+      this.clampPosition();
+    }
     this.updateTransform(animate);
   }
 
@@ -439,13 +443,52 @@ class ImageZoom {
     let velocityY = this.touch.velocityY * 6;
 
     const animate = () => {
+      // 获取边界
+      const { minX, maxX, minY, maxY } = this.getBoundaries();
+
+      // 检查是否超出边界
+      let extraFriction = 1;
+      const exceedThreshold = 50; // 超出多少像素开始增加阻力
+
+      if (this.state.translateX < minX) {
+        const exceed = minX - this.state.translateX;
+        if (exceed > exceedThreshold) {
+          extraFriction *= 0.85;
+        } else {
+          extraFriction *= 0.95;
+        }
+      } else if (this.state.translateX > maxX) {
+        const exceed = this.state.translateX - maxX;
+        if (exceed > exceedThreshold) {
+          extraFriction *= 0.85;
+        } else {
+          extraFriction *= 0.95;
+        }
+      }
+
+      if (this.state.translateY < minY) {
+        const exceed = minY - this.state.translateY;
+        if (exceed > exceedThreshold) {
+          extraFriction *= 0.85;
+        } else {
+          extraFriction *= 0.95;
+        }
+      } else if (this.state.translateY > maxY) {
+        const exceed = this.state.translateY - maxY;
+        if (exceed > exceedThreshold) {
+          extraFriction *= 0.85;
+        } else {
+          extraFriction *= 0.95;
+        }
+      }
+
       // 应用速度
       this.state.translateX += velocityX;
       this.state.translateY += velocityY;
 
-      // 应用摩擦力
-      velocityX *= friction;
-      velocityY *= friction;
+      // 应用摩擦力（包括额外的边界阻力）
+      velocityX *= friction * extraFriction;
+      velocityY *= friction * extraFriction;
 
       // 检查是否应该停止
       const currentSpeed = Math.hypot(velocityX, velocityY);
