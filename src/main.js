@@ -44,8 +44,14 @@ class ImageZoom {
       fingerNum: 0,
       moved: false,
       wasZooming: false, // 记录是否曾经进入过缩放模式
+      velocityX: 0, // X轴速度
+      velocityY: 0, // Y轴速度
+      lastMoveTime: 0, // 上次移动时间
+      lastMoveX: 0, // 上次移动的X位置
+      lastMoveY: 0, // 上次移动的Y位置
     };
 
+    this.inertiaAnimationId = null;
     this.doubleTapTimer = null;
     this.init();
   }
@@ -293,10 +299,6 @@ class ImageZoom {
       this.state.scale = newScale;
     }
 
-    // 如果不是动画模式，限制边界
-    if (!animate) {
-      this.clampPosition();
-    }
     this.updateTransform(animate);
   }
 
@@ -323,8 +325,15 @@ class ImageZoom {
     this.touch.startTranslateY = this.state.translateY;
     this.touch.startScale = this.state.scale;
 
-    // 单指：允许移动
-    if (this.touch.fingerNum === 1) {
+    // 初始化速度和时间记录
+    this.touch.velocityX = 0;
+    this.touch.velocityY = 0;
+    this.touch.lastMoveTime = Date.now();
+    this.touch.lastMoveX = touches[0].clientX;
+    this.touch.lastMoveY = touches[0].clientY;
+
+    // 单指：允许移动（除非曾经进入过缩放模式）
+    if (this.touch.fingerNum === 1 && !this.touch.wasZooming) {
       this.state.isMoving = true;
       this.touch.lastCenter = {
         x: touches[0].clientX,
@@ -335,6 +344,7 @@ class ImageZoom {
     // 双指：缩放
     if (this.touch.fingerNum === 2) {
       this.state.isZooming = true;
+      this.touch.wasZooming = true;
       this.touch.startDistance = this.getDistance(touches);
       this.touch.lastCenter = this.getCenter(touches);
     }
@@ -359,6 +369,19 @@ class ImageZoom {
         x: touches[0].clientX,
         y: touches[0].clientY,
       };
+
+      // 计算速度
+      const currentTime = Date.now();
+      const timeDiff = currentTime - this.touch.lastMoveTime;
+      
+      if (timeDiff > 0) {
+        this.touch.velocityX = (touches[0].clientX - this.touch.lastMoveX) / timeDiff;
+        this.touch.velocityY = (touches[0].clientY - this.touch.lastMoveY) / timeDiff;
+      }
+      
+      this.touch.lastMoveTime = currentTime;
+      this.touch.lastMoveX = touches[0].clientX;
+      this.touch.lastMoveY = touches[0].clientY;
 
       this.updateTransform();
     }
@@ -400,6 +423,64 @@ class ImageZoom {
     }
   }
 
+  /**
+   * 惯性滚动动画
+   */
+  startInertia() {
+    // 如果速度太小，不启动惯性
+    const speed = Math.hypot(this.touch.velocityX, this.touch.velocityY);
+    if (speed < 0.1) {
+      this.snapToBounds();
+      return;
+    }
+
+    const friction = 0.9; // 摩擦系数
+    let velocityX = this.touch.velocityX * 6; // 转换为每帧的像素
+    let velocityY = this.touch.velocityY * 6;
+
+    const animate = () => {
+      // 应用速度
+      this.state.translateX += velocityX;
+      this.state.translateY += velocityY;
+
+      // 应用摩擦力
+      velocityX *= friction;
+      velocityY *= friction;
+
+      // 检查是否应该停止
+      const currentSpeed = Math.hypot(velocityX, velocityY);
+      if (currentSpeed < 0.1) {
+        this.inertiaAnimationId = null;
+        this.snapToBounds();
+        return;
+      }
+
+      this.updateTransform();
+      this.inertiaAnimationId = requestAnimationFrame(animate);
+    };
+
+    this.inertiaAnimationId = requestAnimationFrame(animate);
+  }
+
+  /**
+   * 回弹到边界
+   */
+  snapToBounds() {
+    const { maxZoom } = this.options;
+    const min = this.state.initialScale;
+    const currentScale = this.state.scale;
+    
+    // 先处理缩放回弹
+    if (currentScale < min || currentScale > maxZoom) {
+      const targetScale = this.clamp(currentScale, min, maxZoom);
+      this.setScale(targetScale, this.touch.lastCenter, true);
+    } else {
+      // 只需要限制位置
+      this.clampPosition();
+      this.updateTransform(true);
+    }
+  }
+
   onTouchEnd(e) {
     if (!e.touches.length) {
       // 检查是否是双击
@@ -435,23 +516,38 @@ class ImageZoom {
       // 重置状态
       this.state.isMoving = false;
       this.state.isZooming = false;
+      this.touch.wasZooming = false;
 
-      // 缩放回弹：如果超出边界，回弹到边界值
-      const { maxZoom } = this.options;
-      const min = this.state.initialScale;
-      const currentScale = this.state.scale;
-      
-      if (currentScale < min || currentScale > maxZoom) {
-        const targetScale = this.clamp(currentScale, min, maxZoom);
-        this.setScale(targetScale, this.touch.lastCenter, true);
+      // 如果有惯性动画，先取消
+      if (this.inertiaAnimationId) {
+        cancelAnimationFrame(this.inertiaAnimationId);
+        this.inertiaAnimationId = null;
       }
+
+      // 启动惯性滚动
+      if (this.touch.moved && this.touch.fingerNum === 1) {
+        this.startInertia();
+      } else {
+        // 没有拖动，直接回弹
+        this.snapToBounds();
+      }
+    } else {
+      // 还有手指在屏幕上，更新手指数量
+      this.touch.fingerNum = e.touches.length;
       
-      this.clampPosition();
-      this.updateTransform(true);
+      // 如果曾经进入过缩放模式，松开一个手指后不允许拖动
+      if (this.touch.wasZooming) {
+        this.state.isMoving = false;
+        this.state.isZooming = false;
+      }
     }
   }
 
   destroy() {
+    if (this.inertiaAnimationId) {
+      cancelAnimationFrame(this.inertiaAnimationId);
+      this.inertiaAnimationId = null;
+    }
     this.target.removeEventListener("touchstart", this.onTouchStart);
     this.target.removeEventListener("touchmove", this.onTouchMove);
     this.target.removeEventListener("touchend", this.onTouchEnd);
